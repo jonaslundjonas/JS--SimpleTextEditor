@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Text Editor</title>
+    
+    <!-- Material Components for the web (MDC) CSS -->
+    <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Roboto Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom styles for the editor */
+        :root {
+            --mdc-theme-primary: #3f51b5; /* Indigo */
+            --mdc-theme-secondary: #f50057; /* Pink A400 */
+            --mdc-theme-background: #f5f5f5;
+            --mdc-theme-surface: #ffffff;
+            --mdc-theme-on-primary: #ffffff;
+            --mdc-theme-on-secondary: #ffffff;
+            --mdc-theme-on-surface: #000000;
+        }
+
+        html.dark {
+            --mdc-theme-primary: #7986cb; /* Indigo 300 */
+            --mdc-theme-secondary: #ff4081; /* Pink A200 */
+            --mdc-theme-background: #121212;
+            --mdc-theme-surface: #1e1e1e;
+            --mdc-theme-on-primary: #000000;
+            --mdc-theme-on-secondary: #000000;
+            --mdc-theme-on-surface: #ffffff;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--mdc-theme-background);
+            color: var(--mdc-theme-on-surface);
+            margin: 0;
+        }
+        
+        .main-container {
+            padding: 16px;
+            max-width: 960px;
+            margin: auto;
+        }
+
+        .editor-card {
+            background-color: var(--mdc-theme-surface);
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .mdc-top-app-bar {
+            position: relative;
+            background-color: var(--mdc-theme-primary);
+            color: var(--mdc-theme-on-primary);
+        }
+        
+        .mdc-top-app-bar .mdc-top-app-bar__title {
+             padding-left: 16px;
+        }
+
+        #toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            background-color: var(--mdc-theme-surface);
+            border-bottom: 1px solid rgba(0,0,0,0.12);
+        }
+        
+        html.dark #toolbar {
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .toolbar-btn {
+            color: var(--mdc-theme-on-surface);
+        }
+        
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background-color: rgba(0,0,0,0.12);
+            margin: 0 4px;
+        }
+        html.dark .toolbar-divider {
+            background-color: rgba(255,255,255,0.12);
+        }
+
+
+        #editor-container {
+            display: flex;
+            position: relative;
+            min-height: 50vh;
+        }
+
+        #line-numbers {
+            width: 40px;
+            padding: 16px 0;
+            font-size: 0.875rem;
+            line-height: 1.75;
+            text-align: right;
+            color: rgba(0,0,0,0.54);
+            user-select: none;
+            background-color: #fafafa;
+            border-right: 1px solid rgba(0,0,0,0.12);
+        }
+
+        html.dark #line-numbers {
+            background-color: #2a2a2a;
+            border-right-color: rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.54);
+        }
+        
+        #line-numbers > div {
+            padding-right: 10px;
+            box-sizing: border-box;
+        }
+
+        #editor {
+            outline: none;
+            resize: vertical;
+            overflow: auto;
+            flex-grow: 1;
+            padding: 16px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.75;
+        }
+
+        #preview-frame {
+            flex-grow: 1;
+            border: none;
+            background-color: var(--mdc-theme-surface);
+        }
+        
+        #status-bar {
+            padding: 8px 16px;
+            font-size: 0.75rem;
+            text-align: right;
+            color: rgba(0,0,0,0.54);
+            border-top: 1px solid rgba(0,0,0,0.12);
+        }
+        
+        html.dark #status-bar {
+             color: rgba(255,255,255,0.54);
+             border-top: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .footer-credit {
+            text-align: center;
+            font-size: 0.75rem;
+            color: rgba(0,0,0,0.54);
+            margin-top: 16px;
+            padding-bottom: 8px;
+        }
+        html.dark .footer-credit {
+            color: rgba(255,255,255,0.54);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #find-replace-bar {
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #eee;
+            border-bottom: 1px solid rgba(0,0,0,0.12);
+        }
+        html.dark #find-replace-bar {
+            background-color: #333;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+        #find-replace-bar input {
+            border: 1px solid rgba(0,0,0,0.2);
+            background-color: var(--mdc-theme-surface);
+            color: var(--mdc-theme-on-surface);
+            padding: 4px;
+            border-radius: 4px;
+        }
+        
+        .highlight {
+            background-color: yellow;
+            color: black;
+        }
+        .highlight.active {
+            background-color: orange;
+        }
+
+    </style>
+    <script>
+        // Manages dark mode. Defaults to dark mode unless light mode is explicitly set in localStorage.
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</head>
+<body class="mdc-typography">
+
+    <div class="main-container">
+        <header class="mdc-top-app-bar mdc-elevation--z4">
+            <div class="mdc-top-app-bar__row">
+                <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+                    <span class="mdc-top-app-bar__title">Simple Text Editor</span>
+                </section>
+            </div>
+        </header>
+
+        <div class="editor-card mdc-elevation--z2" style="margin-top: 16px;">
+            <div id="toolbar">
+                <!-- File Operations -->
+                <button id="open-file" class="mdc-icon-button material-icons toolbar-btn" title="Open File">folder_open</button>
+                <button id="save-txt" class="mdc-button toolbar-btn" title="Save as .txt"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">TXT</span></button>
+                <button id="save-csv" class="mdc-button toolbar-btn" title="Save as .csv"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">CSV</span></button>
+                <button id="save-js" class="mdc-button toolbar-btn" title="Save as .js"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">JS</span></button>
+                <button id="save-css" class="mdc-button toolbar-btn" title="Save as .css"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">CSS</span></button>
+                <button id="save-py" class="mdc-button toolbar-btn" title="Save as .py"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">PY</span></button>
+                <button id="save-json" class="mdc-button toolbar-btn" title="Save as .json"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">JSON</span></button>
+                <button id="save-xml" class="mdc-button toolbar-btn" title="Save as .xml"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">XML</span></button>
+                <button id="save-gs" class="mdc-button toolbar-btn" title="Save as .gs"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">GS</span></button>
+                <button id="save-html" class="mdc-button toolbar-btn" title="Save as .html"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">HTML</span></button>
+                <button id="preview-btn" class="mdc-icon-button material-icons toolbar-btn hidden" title="Preview">visibility</button>
+                <div class="toolbar-divider"></div>
+
+                <!-- Font Manipulation -->
+                <select id="font-name" class="mdc-select__native-control"><option>Roboto</option><option>Arial</option><option>Times New Roman</option><option>Courier New</option></select>
+                <select id="font-size" class="mdc-select__native-control"><option value="2">10pt</option><option value="3" selected>12pt</option><option value="4">14pt</option><option value="5">18pt</option></select>
+                <input type="color" id="font-color" class="toolbar-btn" title="Font Color" value="#000000">
+                <div class="toolbar-divider"></div>
+
+                <!-- Formatting -->
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="undo" title="Undo">undo</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="redo" title="Redo">redo</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="bold" title="Bold">format_bold</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="italic" title="Italic">format_italic</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="underline" title="Underline">format_underlined</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="strikeThrough" title="Strikethrough">strikethrough_s</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="subscript" title="Subscript">subscript</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="superscript" title="Superscript">superscript</button>
+                <div class="toolbar-divider"></div>
+
+                <!-- Alignment & Lists -->
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="justifyLeft" title="Align Left">format_align_left</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="justifyCenter" title="Align Center">format_align_center</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="justifyRight" title="Align Right">format_align_right</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="insertUnorderedList" title="Bulleted List">format_list_bulleted</button>
+                <button class="mdc-icon-button material-icons toolbar-btn" data-command="insertOrderedList" title="Numbered List">format_list_numbered</button>
+                <div class="toolbar-divider"></div>
+
+                <!-- Utilities -->
+                <button id="find-btn" class="mdc-icon-button material-icons toolbar-btn" title="Find and Replace">search</button>
+                <button id="dark-mode-toggle" class="mdc-icon-button material-icons toolbar-btn" title="Toggle Dark Mode">brightness_4</button>
+            </div>
+
+            <!-- Find and Replace Bar -->
+            <div id="find-replace-bar" class="hidden">
+                <input type="text" id="find-input" placeholder="Find">
+                <button id="find-prev-btn" class="mdc-icon-button material-icons">arrow_upward</button>
+                <button id="find-next-btn" class="mdc-icon-button material-icons">arrow_downward</button>
+                <span id="match-counter">0/0</span>
+                <input type="text" id="replace-input" placeholder="Replace">
+                <button id="replace-btn" class="mdc-button"><span class="mdc-button__ripple"></span><span class="mdc-button__label">Replace</span></button>
+                <button id="replace-all-btn" class="mdc-button"><span class="mdc-button__ripple"></span><span class="mdc-button__label">Replace All</span></button>
+                <button id="find-close-btn" class="mdc-icon-button material-icons" style="margin-left: auto;">close</button>
+            </div>
+
+
+            <!-- Editor Area -->
+            <div id="editor-container">
+                <div id="line-numbers"><div>1</div></div>
+                <div id="editor" contenteditable="true">
+                    <p><b>Welcome to the Simple Text Editor!</b></p><p>This editor allows you to create, edit, and save a variety of text and code files directly in your browser. All files are handled locally on your computer.</p><p><b>Supported File Types:</b></p><ul><li><b>.txt, .log:</b> For plain text notes and logs.</li><li><b>.html:</b> For web pages. The <i>Preview</i> (eye) icon will appear to let you see a live render of your code.</li><li><b>.js:</b> For JavaScript. The <i>Run</i> (play) icon will appear to execute your script and show console output.</li><li><b>.gs:</b> For Google Apps Script.</li><li><b>.css:</b> For Cascading Style Sheets to style web pages.</li><li><b>.py:</b> For Python code.</li><li><b>.json:</b> For data interchange, common in web applications.</li><li><b>.xml:</b> For structured data using markup.</li><li><b>.csv:</b> For comma-separated data, often used in spreadsheets.</li></ul><p><b>Editor Functions:</b></p><ul><li><b>File Operations:</b> Use the <i>Open</i> (folder) icon and the various <i>Save</i> buttons in the toolbar.</li><li><b>Formatting:</b> Change font, size, color, and apply styles like bold, italic, underline, lists, and alignment.</li><li><b>Editing Tools:</b> Standard Undo/Redo, and a Find/Replace tool are available. The status bar at the bottom shows word and character counts.</li></ul><p>Click the folder icon to begin, or clear this text and start creating!</p>
+                </div>
+                <iframe id="preview-frame" class="hidden"></iframe>
+            </div>
+
+            <!-- Status Bar -->
+            <div id="status-bar">
+                <span id="char-count">0</span> characters, <span id="word-count">0</span> words
+            </div>
+        </div>
+        <div class="footer-credit">
+            Created by Jonas Lund 2025
+        </div>
+    </div>
+
+    <!-- Modal Dialog -->
+    <div class="mdc-dialog" id="modal">
+        <div class="mdc-dialog__container">
+            <div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-content">
+                <h2 class="mdc-dialog__title" id="modal-title">Notification</h2>
+                <div class="mdc-dialog__content" id="modal-message">
+                    Your message here.
+                </div>
+                <div class="mdc-dialog__actions">
+                    <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">
+                        <span class="mdc-button__ripple"></span>
+                        <span class="mdc-button__label">Close</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="mdc-dialog__scrim"></div>
+    </div>
+    
+    <!-- Material Components for the web (MDC) JS -->
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+
+    <script>
+        window.addEventListener('load', () => {
+            // Initialize MDC components
+            mdc.autoInit();
+            const dialog = new mdc.dialog.MDCDialog(document.querySelector('#modal'));
+            
+            // --- DOM Element References ---
+            const editor = document.getElementById('editor');
+            const toolbar = document.getElementById('toolbar');
+            const openFileBtn = document.getElementById('open-file');
+            const saveTxtBtn = document.getElementById('save-txt');
+            const saveCsvBtn = document.getElementById('save-csv');
+            const saveHtmlBtn = document.getElementById('save-html');
+            const saveJsBtn = document.getElementById('save-js');
+            const saveCssBtn = document.getElementById('save-css');
+            const savePyBtn = document.getElementById('save-py');
+            const saveJsonBtn = document.getElementById('save-json');
+            const saveXmlBtn = document.getElementById('save-xml');
+            const saveGsBtn = document.getElementById('save-gs');
+            const previewBtn = document.getElementById('preview-btn');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const lineNumbers = document.getElementById('line-numbers');
+            const editorContainer = document.getElementById('editor-container');
+            const previewFrame = document.getElementById('preview-frame');
+            const charCountEl = document.getElementById('char-count');
+            const wordCountEl = document.getElementById('word-count');
+            const findBtn = document.getElementById('find-btn');
+            const findReplaceBar = document.getElementById('find-replace-bar');
+            const findInput = document.getElementById('find-input');
+            const replaceInput = document.getElementById('replace-input');
+            const replaceBtn = document.getElementById('replace-btn');
+            const replaceAllBtn = document.getElementById('replace-all-btn');
+            const findCloseBtn = document.getElementById('find-close-btn');
+            const findPrevBtn = document.getElementById('find-prev-btn');
+            const findNextBtn = document.getElementById('find-next-btn');
+            const matchCounter = document.getElementById('match-counter');
+            const fontNameSelect = document.getElementById('font-name');
+            const fontSizeSelect = document.getElementById('font-size');
+            const fontColorInput = document.getElementById('font-color');
+
+            let isPreviewMode = false;
+            let currentFileType = 'txt';
+            let searchMatches = [];
+            let currentMatchIndex = -1;
+            
+            // --- Utility Functions ---
+            const showModal = (title, message) => { 
+                modalTitle.textContent = title;
+                modalMessage.innerHTML = `<pre style="white-space: pre-wrap; word-wrap: break-word;">${message}</pre>`;
+                dialog.open();
+            };
+            
+            const updateLineNumbers = () => {
+                const text = editor.innerText;
+                const lineCount = text.length === 0 ? 1 : text.split('\n').length;
+                lineNumbers.innerHTML = Array.from({ length: lineCount }, (_, i) => `<div>${i + 1}</div>`).join('');
+            };
+
+            const updateWordCount = () => {
+                const text = editor.innerText;
+                charCountEl.textContent = text.length;
+                const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
+                wordCountEl.textContent = words;
+            };
+
+            const setPreviewMode = (enabled) => {
+                isPreviewMode = enabled;
+                if (enabled) {
+                    previewFrame.srcdoc = editor.innerText;
+                    editor.classList.add('hidden');
+                    lineNumbers.classList.add('hidden');
+                    previewFrame.classList.remove('hidden');
+                    previewBtn.textContent = 'edit';
+                    previewBtn.setAttribute('title', 'Edit HTML');
+                } else {
+                    editor.classList.remove('hidden');
+                    lineNumbers.classList.remove('hidden');
+                    previewFrame.classList.add('hidden');
+                    previewBtn.textContent = 'visibility';
+                    previewBtn.setAttribute('title', 'Preview HTML');
+                }
+            };
+
+            const runJsPreview = () => {
+                const code = editor.innerText;
+                let capturedLogs = [];
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                const sandbox = iframe.contentWindow;
+                sandbox.console = {
+                    log: (...args) => capturedLogs.push(args.map(a => JSON.stringify(a, null, 2)).join(' ')),
+                    error: (...args) => capturedLogs.push(`ERROR: ${args.map(a => JSON.stringify(a, null, 2)).join(' ')}`),
+                    warn: (...args) => capturedLogs.push(`WARN: ${args.map(a => JSON.stringify(a, null, 2)).join(' ')}`),
+                };
+                
+                try {
+                    sandbox.eval(code);
+                } catch (e) {
+                    capturedLogs.push(`EXECUTION ERROR: ${e.message}`);
+                }
+
+                document.body.removeChild(iframe);
+                showModal('JavaScript Console Output', capturedLogs.join('\n') || 'Script executed with no console output.');
+            };
+            
+            // --- Find and Replace Functions ---
+            const clearHighlights = () => {
+                const highlights = editor.querySelectorAll('span.highlight');
+                highlights.forEach(span => {
+                    const parent = span.parentNode;
+                    parent.replaceChild(document.createTextNode(span.textContent), span);
+                    parent.normalize();
+                });
+            };
+
+            const performSearch = () => {
+                clearHighlights();
+                const searchTerm = findInput.value;
+                if (!searchTerm) {
+                    matchCounter.textContent = '0/0';
+                    searchMatches = [];
+                    currentMatchIndex = -1;
+                    return;
+                }
+                
+                const regex = new RegExp(searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+                const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+                let node;
+                const ranges = [];
+                while (node = walker.nextNode()) {
+                    let match;
+                    while (match = regex.exec(node.textContent)) {
+                        const range = document.createRange();
+                        range.setStart(node, match.index);
+                        range.setEnd(node, match.index + match[0].length);
+                        ranges.push(range);
+                    }
+                }
+                
+                ranges.forEach(range => {
+                    const highlightSpan = document.createElement('span');
+                    highlightSpan.className = 'highlight';
+                    range.surroundContents(highlightSpan);
+                });
+
+                searchMatches = Array.from(editor.querySelectorAll('span.highlight'));
+                currentMatchIndex = -1;
+                
+                if (searchMatches.length > 0) {
+                    navigateToMatch(0);
+                } else {
+                    matchCounter.textContent = '0/0';
+                }
+            };
+
+            const navigateToMatch = (index) => {
+                if (searchMatches.length === 0) return;
+
+                if (currentMatchIndex > -1) {
+                    searchMatches[currentMatchIndex].classList.remove('active');
+                }
+
+                currentMatchIndex = index;
+                const activeMatch = searchMatches[currentMatchIndex];
+                activeMatch.classList.add('active');
+                activeMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                matchCounter.textContent = `${currentMatchIndex + 1}/${searchMatches.length}`;
+            };
+
+
+            // --- Event Listeners ---
+            darkModeToggle.addEventListener('click', () => {
+                const htmlEl = document.documentElement;
+                const isDark = htmlEl.classList.toggle('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            });
+
+            toolbar.addEventListener('click', (e) => {
+                const button = e.target.closest('button[data-command]');
+                if (button) {
+                    document.execCommand(button.dataset.command, false, null);
+                    editor.focus();
+                }
+            });
+
+            fontNameSelect.addEventListener('change', (e) => document.execCommand('fontName', false, e.target.value));
+            fontSizeSelect.addEventListener('change', (e) => document.execCommand('fontSize', false, e.target.value));
+            fontColorInput.addEventListener('input', (e) => document.execCommand('foreColor', false, e.target.value));
+
+            editor.addEventListener('input', () => {
+                updateLineNumbers();
+                updateWordCount();
+            });
+            editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
+            
+            new MutationObserver(updateLineNumbers).observe(editor, { childList: true, characterData: true, subtree: true });
+
+            openFileBtn.addEventListener('click', () => {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = '.txt,.log,.csv,.html,.htm,.py,.js,.css,.gs,.json,.xml';
+                fileInput.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    currentFileType = extension;
+
+                    reader.onload = (event) => {
+                        try {
+                            editor.innerText = event.target.result;
+                            updateLineNumbers();
+                            updateWordCount();
+                            
+                            previewBtn.classList.add('hidden');
+                            if (currentFileType === 'html' || currentFileType === 'htm') {
+                                previewBtn.classList.remove('hidden');
+                                previewBtn.textContent = 'visibility';
+                                previewBtn.setAttribute('title', 'Preview HTML');
+                            } else if (currentFileType === 'js') {
+                                previewBtn.classList.remove('hidden');
+                                previewBtn.textContent = 'play_arrow';
+                                previewBtn.setAttribute('title', 'Run Script');
+                            }
+                            setPreviewMode(false);
+                        } catch (err) {
+                            console.error("Error processing file:", err);
+                            showModal("File Error", `Could not open or parse the file. Error: ${err.message}`);
+                        }
+                    };
+                    reader.onerror = () => showModal("File Error", "Error reading the file.");
+                    reader.readAsText(file);
+                };
+                fileInput.click();
+            });
+
+            previewBtn.addEventListener('click', () => {
+                if (currentFileType === 'html' || currentFileType === 'htm') {
+                    setPreviewMode(!isPreviewMode);
+                } else if (currentFileType === 'js') {
+                    runJsPreview();
+                }
+            });
+            
+            findBtn.addEventListener('click', () => {
+                findReplaceBar.classList.toggle('hidden');
+                if (!findReplaceBar.classList.contains('hidden')) {
+                    findInput.focus();
+                }
+            });
+
+            findCloseBtn.addEventListener('click', () => {
+                clearHighlights();
+                findReplaceBar.classList.add('hidden');
+            });
+            
+            findInput.addEventListener('input', performSearch);
+            
+            findNextBtn.addEventListener('click', () => {
+                if (searchMatches.length > 0) {
+                    navigateToMatch((currentMatchIndex + 1) % searchMatches.length);
+                }
+            });
+            
+            findPrevBtn.addEventListener('click', () => {
+                if (searchMatches.length > 0) {
+                    navigateToMatch((currentMatchIndex - 1 + searchMatches.length) % searchMatches.length);
+                }
+            });
+
+            replaceBtn.addEventListener('click', () => {
+                if (currentMatchIndex > -1 && searchMatches[currentMatchIndex]) {
+                    const activeMatch = searchMatches[currentMatchIndex];
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(activeMatch);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    document.execCommand('insertText', false, replaceInput.value);
+                    performSearch();
+                }
+            });
+
+            replaceAllBtn.addEventListener('click', () => {
+                const replaceTerm = replaceInput.value;
+                if (!replaceTerm) return;
+                
+                // This approach is more robust for undo.
+                document.execCommand('selectAll', false, null);
+                document.execCommand('insertHTML', false, editor.innerHTML.replace(/<span class="highlight active">/g, '<span class="highlight">'));
+                
+                const matches = Array.from(editor.querySelectorAll('span.highlight'));
+                // Iterate backwards to not mess up indices
+                for (let i = matches.length - 1; i >= 0; i--) {
+                    const match = matches[i];
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(match);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    document.execCommand('insertText', false, replaceTerm);
+                }
+                clearHighlights();
+            });
+
+
+            const saveFile = (filename, blob) => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            };
+
+            saveTxtBtn.addEventListener('click', () => saveFile('document.txt', new Blob([editor.innerText], { type: 'text/plain;charset=utf-8' })));
+            saveCsvBtn.addEventListener('click', () => saveFile('document.csv', new Blob([editor.innerText], { type: 'text/csv;charset=utf-8' })));
+            saveHtmlBtn.addEventListener('click', () => saveFile('document.html', new Blob([editor.innerHTML], { type: 'text/html;charset=utf-8' })));
+            saveJsBtn.addEventListener('click', () => saveFile('document.js', new Blob([editor.innerText], { type: 'application/javascript;charset=utf-8' })));
+            saveCssBtn.addEventListener('click', () => saveFile('document.css', new Blob([editor.innerText], { type: 'text/css;charset=utf-8' })));
+            savePyBtn.addEventListener('click', () => saveFile('document.py', new Blob([editor.innerText], { type: 'text/x-python;charset=utf-8' })));
+            saveJsonBtn.addEventListener('click', () => saveFile('document.json', new Blob([editor.innerText], { type: 'application/json;charset=utf-8' })));
+            saveXmlBtn.addEventListener('click', () => saveFile('document.xml', new Blob([editor.innerText], { type: 'application/xml;charset=utf-8' })));
+            saveGsBtn.addEventListener('click', () => saveFile('document.gs', new Blob([editor.innerText], { type: 'text/plain;charset=utf-8' })));
+
+            // Initial setup
+            updateLineNumbers();
+            updateWordCount();
+        });
+    </script>
+</body>
+</html>
