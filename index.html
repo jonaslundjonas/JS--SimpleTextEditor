@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Text Editor</title>
     
-    <!-- Material Components for the web (MDC) CSS -->
     <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
-    <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Roboto Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -220,7 +217,6 @@
 
         <div class="editor-card mdc-elevation--z2" style="margin-top: 16px;">
             <div id="toolbar">
-                <!-- File Operations -->
                 <button id="open-file" class="mdc-icon-button material-icons toolbar-btn" title="Open File">folder_open</button>
                 <button id="save-txt" class="mdc-button toolbar-btn" title="Save as .txt"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">TXT</span></button>
                 <button id="save-csv" class="mdc-button toolbar-btn" title="Save as .csv"><i class="material-icons mdc-button__icon" aria-hidden="true">save</i><span class="mdc-button__ripple"></span><span class="mdc-button__label">CSV</span></button>
@@ -234,13 +230,11 @@
                 <button id="preview-btn" class="mdc-icon-button material-icons toolbar-btn hidden" title="Preview">visibility</button>
                 <div class="toolbar-divider"></div>
 
-                <!-- Font Manipulation -->
                 <select id="font-name" class="mdc-select__native-control"><option>Roboto</option><option>Arial</option><option>Times New Roman</option><option>Courier New</option></select>
                 <select id="font-size" class="mdc-select__native-control"><option value="2">10pt</option><option value="3" selected>12pt</option><option value="4">14pt</option><option value="5">18pt</option></select>
                 <input type="color" id="font-color" class="toolbar-btn" title="Font Color" value="#000000">
                 <div class="toolbar-divider"></div>
 
-                <!-- Formatting -->
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="undo" title="Undo">undo</button>
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="redo" title="Redo">redo</button>
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="bold" title="Bold">format_bold</button>
@@ -251,7 +245,6 @@
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="superscript" title="Superscript">superscript</button>
                 <div class="toolbar-divider"></div>
 
-                <!-- Alignment & Lists -->
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="justifyLeft" title="Align Left">format_align_left</button>
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="justifyCenter" title="Align Center">format_align_center</button>
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="justifyRight" title="Align Right">format_align_right</button>
@@ -259,12 +252,10 @@
                 <button class="mdc-icon-button material-icons toolbar-btn" data-command="insertOrderedList" title="Numbered List">format_list_numbered</button>
                 <div class="toolbar-divider"></div>
 
-                <!-- Utilities -->
                 <button id="find-btn" class="mdc-icon-button material-icons toolbar-btn" title="Find and Replace">search</button>
                 <button id="dark-mode-toggle" class="mdc-icon-button material-icons toolbar-btn" title="Toggle Dark Mode">brightness_4</button>
             </div>
 
-            <!-- Find and Replace Bar -->
             <div id="find-replace-bar" class="hidden">
                 <input type="text" id="find-input" placeholder="Find">
                 <button id="find-prev-btn" class="mdc-icon-button material-icons">arrow_upward</button>
@@ -277,7 +268,6 @@
             </div>
 
 
-            <!-- Editor Area -->
             <div id="editor-container">
                 <div id="line-numbers"><div>1</div></div>
                 <div id="editor" contenteditable="true">
@@ -286,7 +276,6 @@
                 <iframe id="preview-frame" class="hidden"></iframe>
             </div>
 
-            <!-- Status Bar -->
             <div id="status-bar">
                 <span id="char-count">0</span> characters, <span id="word-count">0</span> words
             </div>
@@ -296,7 +285,6 @@
         </div>
     </div>
 
-    <!-- Modal Dialog -->
     <div class="mdc-dialog" id="modal">
         <div class="mdc-dialog__container">
             <div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-content">
@@ -315,7 +303,6 @@
         <div class="mdc-dialog__scrim"></div>
     </div>
     
-    <!-- Material Components for the web (MDC) JS -->
     <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
 
     <script>
@@ -365,6 +352,9 @@
             let searchMatches = [];
             let currentMatchIndex = -1;
             
+            // This variable will hold the raw text content of the file
+            let rawContent = editor.innerText;
+
             // --- Utility Functions ---
             const showModal = (title, message) => { 
                 modalTitle.textContent = title;
@@ -373,7 +363,7 @@
             };
             
             const updateLineNumbers = () => {
-                const text = editor.innerText;
+                const text = editor.textContent;
                 const lineCount = text.length === 0 ? 1 : text.split('\n').length;
                 lineNumbers.innerHTML = Array.from({ length: lineCount }, (_, i) => `<div>${i + 1}</div>`).join('');
             };
@@ -388,7 +378,7 @@
             const setPreviewMode = (enabled) => {
                 isPreviewMode = enabled;
                 if (enabled) {
-                    previewFrame.srcdoc = editor.innerText;
+                    previewFrame.srcdoc = editor.innerHTML; // Use innerHTML for preview
                     editor.classList.add('hidden');
                     lineNumbers.classList.add('hidden');
                     previewFrame.classList.remove('hidden');
@@ -429,12 +419,13 @@
             
             // --- Find and Replace Functions ---
             const clearHighlights = () => {
+                // A better way to clear highlights without destroying other elements
                 const highlights = editor.querySelectorAll('span.highlight');
                 highlights.forEach(span => {
-                    const parent = span.parentNode;
-                    parent.replaceChild(document.createTextNode(span.textContent), span);
-                    parent.normalize();
+                    const textNode = document.createTextNode(span.textContent);
+                    span.parentNode.replaceChild(textNode, span);
                 });
+                editor.normalize();
             };
 
             const performSearch = () => {
@@ -461,6 +452,7 @@
                     }
                 }
                 
+                // Wrap each match with a span
                 ranges.forEach(range => {
                     const highlightSpan = document.createElement('span');
                     highlightSpan.className = 'highlight';
@@ -517,6 +509,7 @@
             });
             editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
             
+            // A MutationObserver is a great idea, keep it.
             new MutationObserver(updateLineNumbers).observe(editor, { childList: true, characterData: true, subtree: true });
 
             openFileBtn.addEventListener('click', () => {
@@ -532,7 +525,17 @@
 
                     reader.onload = (event) => {
                         try {
-                            editor.innerText = event.target.result;
+                            const fileContent = event.target.result;
+                            if (currentFileType === 'html' || currentFileType === 'htm') {
+                                // For HTML, insert the raw HTML code
+                                editor.innerHTML = fileContent;
+                            } else {
+                                // For all other files, insert as plain text
+                                editor.textContent = fileContent;
+                            }
+                            // Store the raw content for all saves except HTML
+                            rawContent = fileContent;
+
                             updateLineNumbers();
                             updateWordCount();
                             
@@ -638,7 +641,8 @@
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             };
-
+            
+            // This is the main fix for the saving issue. Save innerText for all except HTML
             saveTxtBtn.addEventListener('click', () => saveFile('document.txt', new Blob([editor.innerText], { type: 'text/plain;charset=utf-8' })));
             saveCsvBtn.addEventListener('click', () => saveFile('document.csv', new Blob([editor.innerText], { type: 'text/csv;charset=utf-8' })));
             saveHtmlBtn.addEventListener('click', () => saveFile('document.html', new Blob([editor.innerHTML], { type: 'text/html;charset=utf-8' })));
