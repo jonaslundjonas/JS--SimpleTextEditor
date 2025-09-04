@@ -645,7 +645,7 @@
             // This is the main fix for the saving issue. Save innerText for all except HTML
             saveTxtBtn.addEventListener('click', () => saveFile('document.txt', new Blob([editor.innerText], { type: 'text/plain;charset=utf-8' })));
             saveCsvBtn.addEventListener('click', () => saveFile('document.csv', new Blob([editor.innerText], { type: 'text/csv;charset=utf-8' })));
-            saveHtmlBtn.addEventListener('click', () => saveFile('document.html', new Blob([editor.innerHTML], { type: 'text/html;charset=utf-8' })));
+            saveHtmlBtn.addEventListener('click', () => saveFile('document.html', new Blob([editor.innerText], { type: 'text/html;charset=utf-8' })));
             saveJsBtn.addEventListener('click', () => saveFile('document.js', new Blob([editor.innerText], { type: 'application/javascript;charset=utf-8' })));
             saveCssBtn.addEventListener('click', () => saveFile('document.css', new Blob([editor.innerText], { type: 'text/css;charset=utf-8' })));
             savePyBtn.addEventListener('click', () => saveFile('document.py', new Blob([editor.innerText], { type: 'text/x-python;charset=utf-8' })));
