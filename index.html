@@ -363,7 +363,7 @@
             };
             
             const updateLineNumbers = () => {
-                const text = editor.textContent;
+                const text = editor.innerText;
                 const lineCount = text.length === 0 ? 1 : text.split('\n').length;
                 lineNumbers.innerHTML = Array.from({ length: lineCount }, (_, i) => `<div>${i + 1}</div>`).join('');
             };
@@ -491,6 +491,18 @@
                 localStorage.setItem('theme', isDark ? 'dark' : 'light');
             });
 
+            editor.addEventListener('paste', (e) => {
+                // Prevent the default paste action to avoid inserting rich text
+                e.preventDefault();
+
+                // Get the plain text from the clipboard
+                const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+
+                // Insert the plain text into the editor
+                // This is the modern, recommended way to insert text and it supports undo.
+                document.execCommand('insertText', false, text);
+            });
+
             toolbar.addEventListener('click', (e) => {
                 const button = e.target.closest('button[data-command]');
                 if (button) {
@@ -526,13 +538,8 @@
                     reader.onload = (event) => {
                         try {
                             const fileContent = event.target.result;
-                            if (currentFileType === 'html' || currentFileType === 'htm') {
-                                // For HTML, insert the raw HTML code
-                                editor.innerHTML = fileContent;
-                            } else {
-                                // For all other files, insert as plain text
-                                editor.textContent = fileContent;
-                            }
+                            // For all files, insert as plain text to ensure consistent behavior
+                            editor.textContent = fileContent;
                             // Store the raw content for all saves except HTML
                             rawContent = fileContent;
 
@@ -645,7 +652,7 @@
             // This is the main fix for the saving issue. Save innerText for all except HTML
             saveTxtBtn.addEventListener('click', () => saveFile('document.txt', new Blob([editor.innerText], { type: 'text/plain;charset=utf-8' })));
             saveCsvBtn.addEventListener('click', () => saveFile('document.csv', new Blob([editor.innerText], { type: 'text/csv;charset=utf-8' })));
-            saveHtmlBtn.addEventListener('click', () => saveFile('document.html', new Blob([editor.innerHTML], { type: 'text/html;charset=utf-8' })));
+            saveHtmlBtn.addEventListener('click', () => saveFile('document.html', new Blob([editor.innerText], { type: 'text/html;charset=utf-8' })));
             saveJsBtn.addEventListener('click', () => saveFile('document.js', new Blob([editor.innerText], { type: 'application/javascript;charset=utf-8' })));
             saveCssBtn.addEventListener('click', () => saveFile('document.css', new Blob([editor.innerText], { type: 'text/css;charset=utf-8' })));
             savePyBtn.addEventListener('click', () => saveFile('document.py', new Blob([editor.innerText], { type: 'text/x-python;charset=utf-8' })));
